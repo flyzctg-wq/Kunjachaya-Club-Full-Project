@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("DiscouragedApi")
 @Composable
 fun OpeningSplashScreen(
+    lang: Language = Language.BN,
     onSplashFinished: () -> Unit
 ) {
     val context = LocalContext.current
@@ -151,7 +152,7 @@ fun OpeningSplashScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = if (AppLanguageProvider.currentLanguage == Language.BN) "এড়িয়ে যান" else "Skip",
+                        text = if (lang == Language.BN) "এড়িয়ে যান" else "Skip",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )

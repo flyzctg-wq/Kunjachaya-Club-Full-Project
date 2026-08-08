@@ -65,6 +65,7 @@ class MainActivity : FragmentActivity() {
 
                     if (showOpeningSplash) {
                         OpeningSplashScreen(
+                            lang = lang,
                             onSplashFinished = { showOpeningSplash = false }
                         )
                     } else if (currentUser == null) {
