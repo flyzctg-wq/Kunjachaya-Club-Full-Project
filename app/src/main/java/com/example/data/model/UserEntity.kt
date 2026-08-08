@@ -2,6 +2,7 @@ package com.example.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.Exclude
 
 /**
  * Membership classes defined in the Kunjachaya Club constitution (ধারা-৬).
@@ -91,52 +92,88 @@ data class UserEntity(
     private fun cls(): MemberClass = MemberClass.fromLabel(memberClass)
 
     /** President or General Secretary carry the broadest constitutional authority (ধারা-১৭). */
+    @get:Exclude
     fun isPresidentOrGeneralSecretary(): Boolean =
         post() == CommitteePost.PRESIDENT || post() == CommitteePost.GENERAL_SECRETARY
 
     /** Holds one of the 15 elected/co-opted Executive Committee seats (ধারা-১৩গ, ধারা-১৪). */
+    @get:Exclude
     fun isExecutiveCommittee(): Boolean = post() != null
 
+    @get:Exclude
     fun isStandingCouncilMember(): Boolean =
         isStandingCouncil || isFoundingMember() || isPresidentOrGeneralSecretary()
 
+    @get:Exclude
     fun isAdvisoryCouncilMember(): Boolean = cls() == MemberClass.ADVISORY
 
+    @get:Exclude
     fun isFoundingMember(): Boolean = cls() == MemberClass.FOUNDING
 
+    @get:Exclude
     fun isGeneralMember(): Boolean = cls() == MemberClass.GENERAL
 
+    @get:Exclude
     fun isLifetimeMember(): Boolean = cls() == MemberClass.LIFETIME
 
+    @get:Exclude
     fun isDonorMember(): Boolean = cls() == MemberClass.DONOR
 
+    @get:Exclude
     fun isPendingApproval(): Boolean =
         cls() == MemberClass.NEW || membershipStatus.equals("Pending", ignoreCase = true)
 
     /** ধারা-৯(খ): Lifetime & Donor members may attend and speak, but not vote or hold office. */
+    @get:Exclude
     fun hasVotingRights(): Boolean =
         membershipStatus.equals("Active", ignoreCase = true) &&
                 cls() in setOf(MemberClass.FOUNDING, MemberClass.GENERAL)
 
+    @get:Exclude
     fun hasNoticePermission(): Boolean =
         isPresidentOrGeneralSecretary() || (isExecutiveCommittee() && canManageNotices)
 
+    @get:Exclude
     fun hasComplaintPermission(): Boolean =
         isPresidentOrGeneralSecretary() || (isExecutiveCommittee() && canManageComplaints)
 
     /** Account approval is formally an Executive Committee decision (ধারা-১০গ). */
+    @get:Exclude
     fun hasMemberPermission(): Boolean =
         isPresidentOrGeneralSecretary() || (isExecutiveCommittee() && canManageMembers)
 
     /** The Treasurer keeps the books, but the President/Gen. Sec. retain oversight (ধারা-১৭.৫). */
+    @get:Exclude
     fun hasFinancialPermission(): Boolean =
         isPresidentOrGeneralSecretary() || (isExecutiveCommittee() && canManageFinancials)
 
+    @get:Exclude
     fun hasDeletePermission(): Boolean =
         isPresidentOrGeneralSecretary() && canDeleteItems
 
     /**
      * R5 Supreme Leader authority: Only President & General Secretary can appoint/demote R4 Officers
+     * or grant/revoke administrative privilege flags.
+     */
+    @get:Exclude
+    fun canAppointOfficers(): Boolean = isPresidentOrGeneralSecretary()
+
+    /**
+     * Tiered Hierarchy Check (Kingshot Model):
+     * - R5 (President/GS): Supreme authority to appoint/demote R4 Officers & manage all members.
+     * - R4 (EC Officers with member perm): Can approve & manage R1-R3 lower ranks, but CANNOT touch R4/R5 officers.
+     * - R1-R3: Read-only member access.
+     */
+    @get:Exclude
+    fun canModifyUserRole(target: UserEntity?): Boolean {
+        if (target == null) return false
+        if (isPresidentOrGeneralSecretary()) return true
+        if (hasMemberPermission()) {
+            return !target.isExecutiveCommittee()
+        }
+        return false
+    }
+}n appoint/demote R4 Officers
      * or grant/revoke administrative privilege flags.
      */
     fun canAppointOfficers(): Boolean = isPresidentOrGeneralSecretary()
