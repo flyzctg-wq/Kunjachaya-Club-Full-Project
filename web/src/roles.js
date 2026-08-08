@@ -112,3 +112,34 @@ export function hasFinancialPermission(user) {
 export function hasDeletePermission(user) {
   return isPresidentOrGeneralSecretary(user) && !!user?.canDeleteItems;
 }
+
+/**
+ * R5 Supreme Leader authority: Only President & General Secretary can appoint/demote R4 Officers
+ * or grant/revoke administrative privilege flags.
+ */
+export function canAppointOfficers(actor) {
+  return isPresidentOrGeneralSecretary(actor);
+}
+
+/**
+ * Tiered Hierarchy Check (Kingshot Model):
+ * - R5 (President/GS): Supreme authority to appoint/demote R4 Officers & manage all members.
+ * - R4 (EC Officers with member perm): Can approve & manage R1-R3 lower ranks, but CANNOT touch R4/R5 officers.
+ * - R1-R3: Read-only member access.
+ */
+export function canModifyUserRole(actor, target) {
+  if (!actor || !target) return false;
+
+  // R5 Supreme Leaders can modify anyone
+  if (isPresidentOrGeneralSecretary(actor)) {
+    return true;
+  }
+
+  // R4 EC Officers can manage lower ranks (R1-R3) ONLY, cannot touch R4 Officers or R5 Leaders
+  if (hasMemberPermission(actor)) {
+    const isTargetR4OrR5 = isExecutiveCommittee(target);
+    return !isTargetR4OrR5;
+  }
+
+  return false;
+}

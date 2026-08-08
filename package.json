@@ -7,7 +7,16 @@
     "build": "npm --prefix web run build",
     "preview": "npm --prefix web run preview"
   },
-  "keywords": ["club-management", "residential", "react", "android", "vercel"],
+  "keywords": [
+    "club-management",
+    "residential",
+    "react",
+    "android",
+    "vercel"
+  ],
   "author": "Kunjachaya Club",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-admin": "^14.2.0"
+  }
 }
