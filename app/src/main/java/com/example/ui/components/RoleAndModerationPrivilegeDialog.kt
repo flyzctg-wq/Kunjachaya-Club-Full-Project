@@ -51,6 +51,8 @@ fun RoleAndModerationPrivilegeDialog(
     var canDelete by remember { mutableStateOf(user.canDeleteItems) }
     var isSaving by remember { mutableStateOf(false) }
 
+    val currentUser by viewModel.currentUser.collectAsState()
+    val isR5Leader = currentUser?.canAppointOfficers() == true
     val isTopPost = selectedPost == CommitteePost.PRESIDENT || selectedPost == CommitteePost.GENERAL_SECRETARY
 
     // President / General Secretary carry the constitution's broadest authority (ধারা-১৭) — all ticks follow automatically.
@@ -164,11 +166,14 @@ fun RoleAndModerationPrivilegeDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     RoleSelectionOption(
                         title = if (lang == Language.BN) "কোনো কমিটি পদ নেই" else "No committee post",
-                        description = "",
+                        description = if (!isR5Leader) (if (lang == Language.BN) "পদ পরিবর্তনের জন্য R5 লিডার (সভাপতি/সাধারণ সম্পাদক) অনুমতি প্রয়োজন" else "R5 Leader (President/GS) permission required to change officer post") else "",
                         icon = Icons.Default.Person,
                         isSelected = selectedPost == null,
                         color = MaterialTheme.colorScheme.outline,
-                        onClick = { selectedPost = null }
+                        onClick = {
+                            if (isR5Leader) selectedPost = null
+                            else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র R5 লিডাররা অফিসার পদ নিয়োগ/বহিস্কার করতে পারেন" else "Only R5 Leaders can appoint or demote R4 Officers", Toast.LENGTH_SHORT).show()
+                        }
                     )
                     CommitteePost.entries.forEach { post ->
                         RoleSelectionOption(
@@ -179,7 +184,10 @@ fun RoleAndModerationPrivilegeDialog(
                             isSelected = selectedPost == post,
                             color = if (post == CommitteePost.PRESIDENT || post == CommitteePost.GENERAL_SECRETARY)
                                 MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            onClick = { selectedPost = post }
+                            onClick = {
+                                if (isR5Leader) selectedPost = post
+                                else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র R5 লিডাররা অফিসার পদ নিয়োগ/বহিস্কার করতে পারেন" else "Only R5 Leaders can appoint or demote R4 Officers", Toast.LENGTH_SHORT).show()
+                            }
                         )
                     }
                 }

@@ -134,4 +134,25 @@ data class UserEntity(
 
     fun hasDeletePermission(): Boolean =
         isPresidentOrGeneralSecretary() && canDeleteItems
+
+    /**
+     * R5 Supreme Leader authority: Only President & General Secretary can appoint/demote R4 Officers
+     * or grant/revoke administrative privilege flags.
+     */
+    fun canAppointOfficers(): Boolean = isPresidentOrGeneralSecretary()
+
+    /**
+     * Tiered Hierarchy Check (Kingshot Model):
+     * - R5 (President/GS): Supreme authority to appoint/demote R4 Officers & manage all members.
+     * - R4 (EC Officers with member perm): Can approve & manage R1-R3 lower ranks, but CANNOT touch R4/R5 officers.
+     * - R1-R3: Read-only member access.
+     */
+    fun canModifyUserRole(target: UserEntity?): Boolean {
+        if (target == null) return false
+        if (isPresidentOrGeneralSecretary()) return true
+        if (hasMemberPermission()) {
+            return !target.isExecutiveCommittee()
+        }
+        return false
+    }
 }
