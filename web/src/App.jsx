@@ -44,15 +44,33 @@ export default function App() {
 
   // Restore the real Firebase Auth session, if any.
   useEffect(() => {
-    const unsub = watchAuthState(async (firebaseUser) => {
+    const unsub = watchAuthState((firebaseUser) => {
       if (firebaseUser) {
-        const identity = firebaseUser.email || firebaseUser.phoneNumber;
-        const member = await findUserByContact(identity);
-        setCurrentUser(member);
+        const identity = firebaseUser.email || firebaseUser.phoneNumber || '';
+        const fallback = {
+          id: firebaseUser.uid,
+          phone: identity,
+          nameEn: firebaseUser.displayName || identity.split('@')[0] || 'Member',
+          nameBn: firebaseUser.displayName || identity.split('@')[0] || 'সদস্য',
+          primaryContact: identity,
+          membershipStatus: 'Pending',
+          memberClass: 'NEW',
+          committeePost: '',
+          canManageNotices: false, canManageComplaints: false, canManageMembers: false,
+          canManageFinancials: false, canDeleteItems: false,
+          joinedDate: new Date().toISOString().slice(0, 10),
+        };
+        setCurrentUser((prev) => prev || fallback);
+        setAuthLoading(false);
+
+        // Fetch full profile document from Firestore in background
+        findUserByContact(identity)
+          .then((member) => { if (member) setCurrentUser(member); })
+          .catch((e) => console.warn('Background member fetch error:', e));
       } else {
         setCurrentUser(null);
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
     });
     return unsub;
   }, []);

@@ -76,34 +76,15 @@ export async function signOut() {
   await firebaseSignOut(auth);
 }
 
-async function resolveMemberForFirebaseUser(firebaseUser) {
+function resolveMemberForFirebaseUser(firebaseUser) {
   if (!firebaseUser) return null;
 
-  // 1. Direct O(1) lookup by User ID
-  try {
-    const byId = await getUserById(firebaseUser.uid);
-    if (byId) return byId;
-  } catch (e) {
-    console.warn('getUserById check failed:', e);
-  }
-
-  // 2. Lookup by phone or primary contact email
   const identity = firebaseUser.email || firebaseUser.phoneNumber || '';
-  if (identity) {
-    try {
-      const existing = await findUserByContact(identity);
-      if (existing) return existing;
-    } catch (e) {
-      console.warn('findUserByContact check failed:', e);
-    }
-  }
-
-  // 3. Fallback user object if no existing document found
-  const newUser = {
+  const fallback = {
     id: firebaseUser.uid,
     phone: identity || '',
-    nameEn: firebaseUser.displayName || identity.split('@')[0] || '',
-    nameBn: firebaseUser.displayName || identity.split('@')[0] || '',
+    nameEn: firebaseUser.displayName || identity.split('@')[0] || 'Member',
+    nameBn: firebaseUser.displayName || identity.split('@')[0] || 'সদস্য',
     primaryContact: identity || '',
     membershipStatus: 'Pending',
     memberClass: MemberClass.NEW,
@@ -113,10 +94,17 @@ async function resolveMemberForFirebaseUser(firebaseUser) {
     joinedDate: new Date().toISOString().slice(0, 10),
   };
 
-  try {
-    await saveUser(newUser);
-  } catch (e) {
-    console.warn('saveUser background sync failed:', e);
-  }
-  return newUser;
+  // Perform Firestore document lookup & sync in background without blocking UI
+  (async () => {
+    try {
+      const byId = await getUserById(firebaseUser.uid);
+      if (!byId) {
+        await saveUser(fallback);
+      }
+    } catch (e) {
+      console.warn('Background Firestore profile sync skipped:', e);
+    }
+  })();
+
+  return fallback;
 }
