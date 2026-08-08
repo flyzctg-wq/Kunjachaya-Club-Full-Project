@@ -1,6 +1,8 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
@@ -10,6 +12,7 @@ import com.example.data.repository.FirestoreRepository
 import com.example.ui.language.Language
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.storage.FirebaseStorage
 import com.example.data.preferences.LanguagePreferences
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -443,6 +446,32 @@ class ClubViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.updateUser(user)
             firestoreRepository.saveUser(user)
+        }
+    }
+
+    /** Upload a profile photo to Firebase Storage and save the URL to Firestore/Room. */
+    fun uploadProfilePhoto(uri: Uri, context: Context, onResult: (Boolean) -> Unit) {
+        val uid = currentUser.value?.id ?: return
+        viewModelScope.launch {
+            try {
+                val storageRef = FirebaseStorage.getInstance()
+                    .reference
+                    .child("profile_pics/$uid")
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return@launch
+                val bytes = inputStream.readBytes()
+                inputStream.close()
+                storageRef.putBytes(bytes).await()
+                val downloadUrl = storageRef.downloadUrl.await().toString()
+                // Update Room + Firestore
+                val updated = currentUser.value!!.copy(profilePicUrl = downloadUrl)
+                repository.updateUser(updated)
+                firestoreRepository.saveUser(updated)
+                currentUser.value = updated
+                onResult(true)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(false)
+            }
         }
     }
 

@@ -96,7 +96,8 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   implementation(libs.sqlcipher.android)
   implementation(libs.androidx.browser)
-  // implementation(libs.coil.compose)
+  implementation(libs.coil.compose)
+  implementation(libs.firebase.storage)
   implementation(libs.firebase.ai)
   // Firebase Firestore:
   implementation(libs.firebase.firestore)

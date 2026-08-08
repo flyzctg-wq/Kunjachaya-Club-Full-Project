@@ -59,9 +59,7 @@ export default function AuthModal({ lang, setCurrentUser, setShowAuthModal }) {
 
         {/* Branding */}
         <div className="text-center mb-lg">
-          <div className="w-16 h-16 bg-primary-container rounded-2xl flex items-center justify-center mx-auto mb-md">
-            <Icon name="home_health" className="text-white text-4xl" />
-          </div>
+          <img src="/logo.png" alt="Kunjachaya Club Logo" className="w-20 h-20 object-contain mx-auto mb-md drop-shadow-md" />
           <h1 className="font-display-lg text-headline-lg-mobile text-on-surface tracking-tight">Kunjachaya Club</h1>
           <p className="font-body-md text-on-surface-variant mt-xs">Welcome to your sanctuary</p>
         </div>

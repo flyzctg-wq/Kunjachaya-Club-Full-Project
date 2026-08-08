@@ -9,8 +9,8 @@ export default function Header({ lang, setLang, currentUser, setCurrentUser, set
 
   return (
     <header className="fixed top-0 w-full z-50 bg-surface/80 dark:bg-inverse-surface/80 glass-nav flex justify-between items-center px-gutter h-16 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Icon name="spa" className="text-primary text-3xl" />
+      <div className="flex items-center gap-3">
+        <img src="/logo.png" alt="Kunjachaya Club Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
         <h1 className="font-display-lg text-headline-lg-mobile text-primary dark:text-primary-fixed tracking-tight">
           {t.appName || 'Kunjachaya'}
         </h1>

@@ -1,7 +1,11 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.Image
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,22 +19,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.fragment.app.FragmentActivity
-import android.widget.Toast
-import com.example.utils.BiometricAuthManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.fragment.app.FragmentActivity
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.R
 import com.example.data.model.UserEntity
 import com.example.ui.language.AppLanguage
 import com.example.ui.language.Language
 import com.example.ui.viewmodel.ClubViewModel
+import com.example.utils.BiometricAuthManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +53,25 @@ fun ProfileScreen(
     var showEditDialog by remember { mutableStateOf(false) }
     var biometricEnabled by remember { mutableStateOf(true) }
     var financialFilter by remember { mutableStateOf("ALL") } // ALL, Paid, Due, Donation
+    var isUploadingPhoto by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            isUploadingPhoto = true
+            viewModel.uploadProfilePhoto(
+                uri = uri,
+                context = context,
+                onResult = { success ->
+                    isUploadingPhoto = false
+                    if (!success) {
+                        Toast.makeText(context, "Photo upload failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -102,16 +127,67 @@ fun ProfileScreen(
                         modifier = Modifier.padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Surface(
-                            modifier = Modifier.size(80.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary
+                        // Profile avatar with tap-to-upload
+                        Box(
+                            contentAlignment = Alignment.BottomEnd,
+                            modifier = Modifier
+                                .size(88.dp)
+                                .clickable { photoPickerLauncher.launch("image/*") }
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.img_club_logo),
-                                    contentDescription = "Profile Picture",
-                                    modifier = Modifier.size(64.dp).clip(CircleShape)
+                            if (isUploadingPhoto) {
+                                Surface(
+                                    modifier = Modifier.size(80.dp),
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(32.dp),
+                                            strokeWidth = 3.dp
+                                        )
+                                    }
+                                }
+                            } else if (!u.profilePicUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(u.profilePicUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Profile Photo",
+                                    contentScale = ContentScale.Crop,
+                                    placeholder = painterResource(R.drawable.img_club_logo),
+                                    error = painterResource(R.drawable.img_club_logo),
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(CircleShape)
+                                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                )
+                            } else {
+                                Surface(
+                                    modifier = Modifier.size(80.dp),
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        androidx.compose.foundation.Image(
+                                            painter = painterResource(id = R.drawable.img_club_logo),
+                                            contentDescription = "Club Logo",
+                                            modifier = Modifier.size(64.dp).clip(CircleShape)
+                                        )
+                                    }
+                                }
+                            }
+                            // Camera badge
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = "Change photo",
+                                    modifier = Modifier.padding(4.dp),
+                                    tint = Color.White
                                 )
                             }
                         }
