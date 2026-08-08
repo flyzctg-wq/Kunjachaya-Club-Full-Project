@@ -30,12 +30,18 @@ export default function ProfileView({ lang, currentUser, setCurrentUser, setActi
 
   const handleSave = async () => {
     setIsSaving(true);
+    // 1. Immediately update local state & exit edit mode
+    setCurrentUser((prev) => ({ ...prev, ...form }));
+    setIsEditing(false);
+
+    // 2. Sync to Firestore with background timeout
     try {
-      await updateUser(currentUser.id, form);
-      setCurrentUser({ ...currentUser, ...form });
-      setIsEditing(false);
+      await Promise.race([
+        updateUser(currentUser.id, form),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Save timeout')), 5000))
+      ]);
     } catch (err) {
-      console.error('Failed to save profile', err);
+      console.warn('Background profile save notice:', err);
     } finally {
       setIsSaving(false);
     }

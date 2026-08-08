@@ -48,25 +48,25 @@ export async function findUserByContact(contact) {
 }
 
 export async function saveUser(user) {
-  await setDoc(doc(usersCol, user.id), user);
+  await setDoc(doc(usersCol, user.id), user, { merge: true });
 }
 
 export async function updateUser(userId, patch) {
-  await updateDoc(doc(usersCol, userId), patch);
+  await setDoc(doc(usersCol, userId), patch, { merge: true });
 }
 
 export async function updateMembershipStatus(userId, status) {
-  await updateDoc(doc(usersCol, userId), { membershipStatus: status });
+  await setDoc(doc(usersCol, userId), { membershipStatus: status }, { merge: true });
 }
 
 export async function updateUserRoleAndPrivileges(userId, {
   memberClass, committeePost, canManageNotices, canManageComplaints,
   canManageMembers, canManageFinancials, canDeleteItems,
 }) {
-  await updateDoc(doc(usersCol, userId), {
+  await setDoc(doc(usersCol, userId), {
     memberClass, committeePost, canManageNotices, canManageComplaints,
     canManageMembers, canManageFinancials, canDeleteItems,
-  });
+  }, { merge: true });
 }
 
 export async function deleteUser(userId) {
