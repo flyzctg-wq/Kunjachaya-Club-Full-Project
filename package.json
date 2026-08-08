@@ -1,0 +1,13 @@
+{
+  "name": "kunjachaya-club",
+  "version": "1.0.0",
+  "description": "Bilingual Resident Club Management System for Kunjachaya Club (Web & Mobile)",
+  "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "preview": "npm --prefix web run preview"
+  },
+  "keywords": ["club-management", "residential", "react", "android", "vercel"],
+  "author": "Kunjachaya Club",
+  "license": "MIT"
+}

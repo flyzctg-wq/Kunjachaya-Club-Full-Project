@@ -1,0 +1,6 @@
+{
+  "name": "Kunjachaya Club",
+  "description": "Kunjachaya Club Management System with role hierarchy (Super Admin, Admin, Member), complaints management, notices, and financial tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

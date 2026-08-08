@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "668738359171",
+    "project_id": "kunjachaya-club",
+    "storage_bucket": "kunjachaya-club.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668738359171:android:2b16f3ef6c8d2c3d77f0b6",
+        "android_client_info": {
+          "package_name": "com.aistudio.kunjachayaclub.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "668738359171-k380aavam8gq54dkpgrdrp671mbcqvkh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPF9ja04zGbYfHNv3bmNS9yeuYVr-fJGQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668738359171-k380aavam8gq54dkpgrdrp671mbcqvkh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

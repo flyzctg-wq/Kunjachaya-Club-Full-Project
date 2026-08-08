@@ -1,0 +1,14 @@
+# Vercel only needs web/ — everything else here is the Android app,
+# Cloud Functions source, and Gradle tooling, none of which Vercel builds.
+app/
+gradle/
+gradlew
+gradlew.bat
+functions/
+assets/.aistudio/
+*.md
+.github/
+google-services.json
+build.gradle.kts
+settings.gradle.kts
+gradle.properties

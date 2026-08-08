@@ -1,0 +1,24 @@
+*.iml
+.gradle
+.kotlin
+/local.properties
+/.idea/
+.DS_Store
+/build
+app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.env
+.env.local
+debug.keystore
+
+# Node & Build Outputs
+node_modules/
+web/node_modules/
+web/dist/
+functions/node_modules/
+functions/lib/
+*.log
+

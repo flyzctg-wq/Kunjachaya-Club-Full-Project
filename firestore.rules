@@ -1,0 +1,171 @@
+rules_version = '2';
+
+// Server-side enforcement of the Kunjachaya Club constitution's permission
+// model. This is what actually makes "no fake access" hold up — the Android
+// and web app UIs both gate actions on the same rules, but a modified or
+// hand-crafted client could skip the UI entirely. These rules are the real
+// backstop: every read and write is checked here regardless of what any
+// client claims about itself.
+//
+// User documents live at /users/{uid} where {uid} is the real Firebase Auth
+// UID (not an app-generated string) — this lets rules reliably identify
+// "the caller's own profile" via request.auth.uid.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Holds one of the 15 Executive Committee posts (ধারা-১৪).
+    function isExecutiveCommittee() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        myProfile().committeePost is string &&
+        myProfile().committeePost.size() > 0;
+    }
+
+    // President or General Secretary carry the constitution's broadest
+    // authority (ধারা-১৭) — equivalent to the old "Super Admin".
+    function isPresidentOrGeneralSecretary() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        myProfile().committeePost in ['PRESIDENT', 'GENERAL_SECRETARY'];
+    }
+
+    function hasPrivilege(field) {
+      return isPresidentOrGeneralSecretary() ||
+        (isExecutiveCommittee() && myProfile()[field] == true);
+    }
+
+    // Fields a committee member can grant themselves are never trusted from
+    // the write payload — only compared against what's already stored.
+    function notEscalatingPrivileges() {
+      return request.resource.data.memberClass == resource.data.memberClass &&
+        request.resource.data.committeePost == resource.data.committeePost &&
+        request.resource.data.membershipStatus == resource.data.membershipStatus &&
+        request.resource.data.canManageNotices == resource.data.canManageNotices &&
+        request.resource.data.canManageComplaints == resource.data.canManageComplaints &&
+        request.resource.data.canManageMembers == resource.data.canManageMembers &&
+        request.resource.data.canManageFinancials == resource.data.canManageFinancials &&
+        request.resource.data.canDeleteItems == resource.data.canDeleteItems;
+    }
+
+    // --- USERS ---
+    // Directory is readable by any signed-in resident (Android/web directory
+    // views both need this). Residents can create/update their own profile
+    // details but can NEVER touch their own class, committee post, approval
+    // status, or permission flags — only an EC member with real member
+    // permission (or the President/Gen. Sec.) can change those (ধারা-১০, ১৪).
+    match /users/{userId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSelf(userId) &&
+        request.resource.data.membershipStatus == 'Pending' &&
+        request.resource.data.memberClass == 'NEW' &&
+        request.resource.data.committeePost == '' &&
+        request.resource.data.canManageNotices == false &&
+        request.resource.data.canManageComplaints == false &&
+        request.resource.data.canManageMembers == false &&
+        request.resource.data.canManageFinancials == false &&
+        request.resource.data.canDeleteItems == false;
+
+      allow create: if hasPrivilege('canManageMembers');
+
+      allow update: if isSelf(userId) && notEscalatingPrivileges();
+      allow update: if hasPrivilege('canManageMembers');
+
+      allow delete: if isPresidentOrGeneralSecretary();
+    }
+
+    // --- FINANCIALS ---
+    // A resident may only read their own ledger; committee members with
+    // financial permission (or the Treasurer's superiors) see all of it.
+    // Dues are issued by the Executive Committee only. A resident may
+    // self-create their own Donation record (needed to get a real Firestore
+    // document before starting PipraPay checkout) but never any other type,
+    // and never with a status other than Pending.
+    // Crucially: clients can never mark a record "Completed" themselves —
+    // that only happens via the PipraPay webhook, which runs on the Admin
+    // SDK and bypasses these rules entirely. A resident-initiated write
+    // that tries to set status to Completed is rejected here.
+    match /financials/{recordId} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || hasPrivilege('canManageFinancials'));
+
+      allow create: if hasPrivilege('canManageFinancials') &&
+        request.resource.data.status == 'Pending';
+
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.type == 'Donation' &&
+        request.resource.data.status == 'Pending';
+
+      allow update: if hasPrivilege('canManageFinancials') &&
+        request.resource.data.status != 'Completed';
+
+      allow delete: if isPresidentOrGeneralSecretary();
+    }
+
+    // --- ANNOUNCEMENTS / NOTICES ---
+    match /announcements/{noticeId} {
+      allow read: if isSignedIn();
+      allow create, update: if hasPrivilege('canManageNotices');
+      allow delete: if isPresidentOrGeneralSecretary();
+    }
+
+    // --- COMPLAINTS ---
+    // Residents submit and read only their own tickets; committee members
+    // with complaint permission see and resolve all of them.
+    match /complaints/{complaintId} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || hasPrivilege('canManageComplaints'));
+
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'Pending';
+
+      allow update: if hasPrivilege('canManageComplaints');
+
+      allow delete: if isPresidentOrGeneralSecretary();
+    }
+
+    // --- EVENTS ---
+    match /Events/{eventId} {
+      allow read: if isSignedIn();
+      allow create, delete: if hasPrivilege('canManageNotices');
+      // Anyone may toggle their own reminder; nothing else about the event.
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isReminderSet']);
+      allow update: if hasPrivilege('canManageNotices');
+    }
+
+    // --- ACTIVITY LOGS ---
+    // Committee-only visibility — this is the constitution's internal
+    // record of who did what, not resident-facing content.
+    match /ActivityLogs/{logId} {
+      allow read: if isExecutiveCommittee();
+      allow create: if isExecutiveCommittee() &&
+        request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // --- PAYMENT ORDERS ---
+    // Orders are created and completed exclusively by the Cloud Function
+    // (Admin SDK, bypasses rules) after talking to the real PipraPay API.
+    // Clients may only read their own order to watch its status.
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}
