@@ -11,7 +11,7 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth } from '../firebase';
-import { findUserByContact, saveUser } from './firestoreService';
+import { findUserByContact, getUserById, saveUser } from './firestoreService';
 import { MemberClass } from '../roles';
 
 export function watchAuthState(callback) {
@@ -26,11 +26,19 @@ export async function signIn(email, password) {
 export async function register(name, email, phone, password) {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (name) {
-    await updateProfile(cred.user, { displayName: name });
+    try {
+      await updateProfile(cred.user, { displayName: name });
+    } catch (e) {
+      console.warn('updateProfile failed:', e);
+    }
   }
 
-  const existing = await findUserByContact(phone || email);
-  if (existing) return existing;
+  try {
+    const existing = await findUserByContact(phone || email);
+    if (existing) return existing;
+  } catch (e) {
+    console.warn('findUserByContact check failed:', e);
+  }
 
   // No fabricated identity, address, or NID — the resident fills in their
   // real profile, and an Executive Committee member approves membership.
@@ -55,7 +63,12 @@ export async function register(name, email, phone, password) {
     profilePicUrl: '', nidFrontUrl: '', nidBackUrl: '',
     joinedDate: new Date().toISOString().slice(0, 10),
   };
-  await saveUser(newUser);
+
+  try {
+    await saveUser(newUser);
+  } catch (e) {
+    console.warn('saveUser failed:', e);
+  }
   return newUser;
 }
 
@@ -64,17 +77,33 @@ export async function signOut() {
 }
 
 async function resolveMemberForFirebaseUser(firebaseUser) {
-  const identity = firebaseUser.email || firebaseUser.phoneNumber;
-  const existing = await findUserByContact(identity);
-  if (existing) return existing;
+  if (!firebaseUser) return null;
 
-  // Signed in via Firebase but no matching member record yet — same
-  // no-fabrication rule applies.
+  // 1. Direct O(1) lookup by User ID
+  try {
+    const byId = await getUserById(firebaseUser.uid);
+    if (byId) return byId;
+  } catch (e) {
+    console.warn('getUserById check failed:', e);
+  }
+
+  // 2. Lookup by phone or primary contact email
+  const identity = firebaseUser.email || firebaseUser.phoneNumber || '';
+  if (identity) {
+    try {
+      const existing = await findUserByContact(identity);
+      if (existing) return existing;
+    } catch (e) {
+      console.warn('findUserByContact check failed:', e);
+    }
+  }
+
+  // 3. Fallback user object if no existing document found
   const newUser = {
     id: firebaseUser.uid,
     phone: identity || '',
-    nameEn: firebaseUser.displayName || '',
-    nameBn: firebaseUser.displayName || '',
+    nameEn: firebaseUser.displayName || identity.split('@')[0] || '',
+    nameBn: firebaseUser.displayName || identity.split('@')[0] || '',
     primaryContact: identity || '',
     membershipStatus: 'Pending',
     memberClass: MemberClass.NEW,
@@ -83,6 +112,11 @@ async function resolveMemberForFirebaseUser(firebaseUser) {
     canManageFinancials: false, canDeleteItems: false,
     joinedDate: new Date().toISOString().slice(0, 10),
   };
-  await saveUser(newUser);
+
+  try {
+    await saveUser(newUser);
+  } catch (e) {
+    console.warn('saveUser background sync failed:', e);
+  }
   return newUser;
 }

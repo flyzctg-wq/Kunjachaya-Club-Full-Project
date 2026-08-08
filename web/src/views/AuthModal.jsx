@@ -19,12 +19,28 @@ export default function AuthModal({ lang, setCurrentUser, setShowAuthModal }) {
     setIsLoading(true);
     try {
       const user = mode === 'signin'
-        ? await signIn(email, password)
-        : await register(name, email, phone, password);
+        ? await signIn(email.trim(), password)
+        : await register(name, email.trim(), phone, password);
       setCurrentUser(user);
       setShowAuthModal(false);
     } catch (err) {
-      setError(err?.message || 'Authentication failed');
+      console.error('Auth error:', err);
+      let raw = err?.message || '';
+      let msg = raw;
+      if (raw.includes('invalid-credential') || raw.includes('wrong-password') || raw.includes('user-not-found') || raw.includes('invalid-email')) {
+        msg = lang === 'bn'
+          ? 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। নতুন একাউন্ট খুলতে উপরে "নিবন্ধন" ট্যাবে চাপ দিন।'
+          : 'Invalid email or password. Click the "Register" tab to create a new account.';
+      } else if (raw.includes('email-already-in-use')) {
+        msg = lang === 'bn'
+          ? 'এই ইমেইল দিয়ে ইতিমধ্যে একাউন্ট তৈরি করা আছে। অনুগ্রহ করে "সাইন ইন" ট্যাবে যান।'
+          : 'An account already exists with this email. Please click the "Login" tab.';
+      } else if (raw.includes('weak-password')) {
+        msg = lang === 'bn'
+          ? 'পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে।'
+          : 'Password must be at least 6 characters.';
+      }
+      setError(msg || 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
