@@ -8,7 +8,6 @@ import ComplaintsView from './views/ComplaintsView';
 import EventsView from './views/EventsView';
 import DirectoryView from './views/DirectoryView';
 import AdminPortalView from './views/AdminPortalView';
-import DevDocsView from './views/DevDocsView';
 import ProfileView from './views/ProfileView';
 import AuthModal from './views/AuthModal';
 
@@ -235,10 +234,6 @@ export default function App() {
                 complaints={complaints}
                 activityLogs={activityLogs}
               />
-            )}
-
-            {activeTab === 'devdocs' && isExecutiveCommittee(currentUser) && (
-              <DevDocsView />
             )}
           </>
         )}

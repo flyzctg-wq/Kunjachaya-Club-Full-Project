@@ -184,7 +184,6 @@ class MainActivity : FragmentActivity() {
                                     )
                                     "financials" -> FinancialsScreen(viewModel = viewModel)
                                     "admin" -> AdminPortalScreen(viewModel = viewModel)
-                                    "schema" -> DevDocsScreen(viewModel = viewModel)
                                 }
                             }
                         }

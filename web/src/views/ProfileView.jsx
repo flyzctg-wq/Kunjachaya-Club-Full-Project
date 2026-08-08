@@ -168,10 +168,7 @@ export default function ProfileView({ lang, currentUser, setCurrentUser, setActi
         <QuickLink icon="payments" label={t.navFinancials} onClick={() => setActiveTab('financials')} />
         <QuickLink icon="support_agent" label={t.navComplaints} onClick={() => setActiveTab('complaints')} />
         {isExecutiveCommittee(currentUser) && (
-          <>
-            <QuickLink icon="shield" label={t.adminDashboard} onClick={() => setActiveTab('admin')} />
-            <QuickLink icon="code" label="Developer Docs" onClick={() => setActiveTab('devdocs')} />
-          </>
+          <QuickLink icon="shield" label={t.adminDashboard} onClick={() => setActiveTab('admin')} />
         )}
       </div>
 

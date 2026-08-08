@@ -16,7 +16,6 @@ export const translations = {
     navEvents: "Events Calendar",
     navDirectory: "Member Directory",
     navAdmin: "Admin Portal",
-    navDevDocs: "Developer Docs",
     
     // Quick Actions
     payDues: "Pay Monthly Dues",
@@ -109,7 +108,6 @@ export const translations = {
     navEvents: "অনুষ্ঠান ক্যালেন্ডার",
     navDirectory: "সদস্য ডিরেক্টরি",
     navAdmin: "এডমিন পোর্টাল",
-    navDevDocs: "ডেভেলপার ডকস",
     
     // Quick Actions
     payDues: "মাসিক চাঁদা পরিশোধ",
