@@ -22,3 +22,6 @@ functions/node_modules/
 functions/lib/
 *.log
 
+# Raw assets
+Splash screen/
+
