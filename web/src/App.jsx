@@ -23,6 +23,7 @@ import {
   subscribeEvents,
   subscribeActivityLogs,
   findUserByContact,
+  getUserById,
 } from './services/firestoreService';
 import { isExecutiveCommittee, hasComplaintPermission } from './roles';
 
@@ -60,13 +61,23 @@ export default function App() {
           canManageFinancials: false, canDeleteItems: false,
           joinedDate: new Date().toISOString().slice(0, 10),
         };
-        setCurrentUser((prev) => prev || fallback);
-        setAuthLoading(false);
 
-        // Fetch full profile document from Firestore in background
-        findUserByContact(identity)
-          .then((member) => { if (member) setCurrentUser(member); })
-          .catch((e) => console.warn('Background member fetch error:', e));
+        // Fetch full profile document from Firestore by UID directly
+        getUserById(firebaseUser.uid)
+          .then((member) => {
+            if (member) {
+              setCurrentUser(member);
+            } else {
+              findUserByContact(identity).then((alt) => {
+                setCurrentUser(alt || fallback);
+              });
+            }
+          })
+          .catch((e) => {
+            console.warn('Background member fetch error:', e);
+            setCurrentUser((prev) => prev || fallback);
+          })
+          .finally(() => setAuthLoading(false));
       } else {
         setCurrentUser(null);
         setAuthLoading(false);

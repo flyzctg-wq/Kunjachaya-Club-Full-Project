@@ -20,6 +20,12 @@ export function watchAuthState(callback) {
 
 export async function signIn(email, password) {
   const cred = await signInWithEmailAndPassword(auth, email, password);
+  try {
+    const realMember = await getUserById(cred.user.uid);
+    if (realMember) return realMember;
+  } catch (e) {
+    console.warn('getUserById failed on signIn:', e);
+  }
   return resolveMemberForFirebaseUser(cred.user);
 }
 
