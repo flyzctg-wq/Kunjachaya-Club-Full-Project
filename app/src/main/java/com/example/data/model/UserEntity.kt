@@ -40,9 +40,11 @@ enum class CommitteePost {
     EXECUTIVE_MEMBER;              // কার্যকরী সদস্য — 3
 
     companion object {
-        fun fromLabel(label: String?): CommitteePost? =
-            if (label.isNullOrBlank()) null
-            else entries.firstOrNull { it.name.equals(label, ignoreCase = true) }
+        fun fromLabel(label: String?): CommitteePost? {
+            if (label.isNullOrBlank()) return null
+            val normalized = label.trim().uppercase().replace(Regex("[\\s-]+"), "_")
+            return entries.firstOrNull { it.name == normalized }
+        }
     }
 }
 

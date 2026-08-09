@@ -51,9 +51,15 @@ export const memberClassLabels = {
   [MemberClass.ADVISORY]: { en: 'Advisory Member', bn: 'উপদেষ্টা সদস্য' },
 };
 
+export function normalizePostKey(post) {
+  if (!post) return '';
+  return post.trim().toUpperCase().replace(/[\s-]+/g, '_');
+}
+
 export function committeePostLabel(post, lang = 'en') {
   if (!post) return '';
-  return committeePostLabels[post]?.[lang] ?? '';
+  const key = normalizePostKey(post);
+  return committeePostLabels[key]?.[lang] ?? post;
 }
 
 export function memberClassLabel(memberClass, lang = 'en') {
@@ -62,7 +68,8 @@ export function memberClassLabel(memberClass, lang = 'en') {
 
 /** President or General Secretary carry the broadest constitutional authority (ধারা-১৭). */
 export function isPresidentOrGeneralSecretary(user) {
-  return user?.committeePost === CommitteePost.PRESIDENT || user?.committeePost === CommitteePost.GENERAL_SECRETARY;
+  const postKey = normalizePostKey(user?.committeePost);
+  return postKey === CommitteePost.PRESIDENT || postKey === CommitteePost.GENERAL_SECRETARY;
 }
 
 /** Holds one of the 15 elected/co-opted Executive Committee seats (ধারা-১৩গ, ধারা-১৪). */

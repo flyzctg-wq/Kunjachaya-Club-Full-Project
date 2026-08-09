@@ -39,7 +39,7 @@ service cloud.firestore {
     function isPresidentOrGeneralSecretary() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        myProfile().committeePost in ['PRESIDENT', 'GENERAL_SECRETARY'];
+        (myProfile().committeePost in ['PRESIDENT', 'GENERAL_SECRETARY', 'President', 'General Secretary']);
     }
 
     function hasPrivilege(field) {
