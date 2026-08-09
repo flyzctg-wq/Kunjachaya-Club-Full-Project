@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   onAuthStateChanged,
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -80,6 +81,10 @@ export async function register(name, email, phone, password) {
 
 export async function signOut() {
   await firebaseSignOut(auth);
+}
+
+export async function sendPasswordResetEmail(email) {
+  await firebaseSendPasswordResetEmail(auth, email);
 }
 
 function resolveMemberForFirebaseUser(firebaseUser) {

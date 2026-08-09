@@ -114,31 +114,32 @@ export function hasDeletePermission(user) {
 }
 
 /**
- * R5 Supreme Leader authority: Only President & General Secretary can appoint/demote R4 Officers
- * or grant/revoke administrative privilege flags.
+ * Only the President or General Secretary can reassign a committee post or
+ * edit another member's permission flags (ধারা-১৭) — this is the
+ * constitution's actual authority split, not an arbitrary admin tier.
  */
 export function canAppointOfficers(actor) {
   return isPresidentOrGeneralSecretary(actor);
 }
 
 /**
- * Tiered Hierarchy Check (Kingshot Model):
- * - R5 (President/GS): Supreme authority to appoint/demote R4 Officers & manage all members.
- * - R4 (EC Officers with member perm): Can approve & manage R1-R3 lower ranks, but CANNOT touch R4/R5 officers.
- * - R1-R3: Read-only member access.
+ * Who may edit whose membership/role record:
+ * - President/General Secretary may edit anyone, including other Executive
+ *   Committee members (ধারা-১৭).
+ * - An EC member holding canManageMembers may approve and manage ordinary
+ *   (non-committee) members only — approving a member is an EC decision
+ *   (ধারা-১০গ), but reassigning a committee seat stays with the President/GS.
+ * - Everyone else has no authority to modify another member's record.
  */
 export function canModifyUserRole(actor, target) {
   if (!actor || !target) return false;
 
-  // R5 Supreme Leaders can modify anyone
   if (isPresidentOrGeneralSecretary(actor)) {
     return true;
   }
 
-  // R4 EC Officers can manage lower ranks (R1-R3) ONLY, cannot touch R4 Officers or R5 Leaders
   if (hasMemberPermission(actor)) {
-    const isTargetR4OrR5 = isExecutiveCommittee(target);
-    return !isTargetR4OrR5;
+    return !isExecutiveCommittee(target);
   }
 
   return false;

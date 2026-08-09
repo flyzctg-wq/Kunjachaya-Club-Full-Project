@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { translations } from '../translations';
 import { addAnnouncement, addFinancialRecord, updateComplaintStatus, updateMembershipStatus, addActivityLog } from '../services/firestoreService';
 import { memberClassLabel } from '../roles';
+import RoleManagementPanel from './RoleManagementPanel';
 
 export default function AdminPortalView({
   lang,
@@ -25,6 +26,7 @@ export default function AdminPortalView({
   const [isIssuingDues, setIsIssuingDues] = useState(false);
 
   const [adminStatusMsg, setAdminStatusMsg] = useState('');
+  const [showRolePanel, setShowRolePanel] = useState(false);
 
   const activeMembers = (users || []).filter(u => u.membershipStatus === 'Active');
   const pendingMembers = (users || []).filter(u => u.membershipStatus === 'Pending');
@@ -120,12 +122,30 @@ export default function AdminPortalView({
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-6">
-        <span className="px-2 py-0.5 bg-primary-container text-on-primary-container text-[10px] uppercase font-bold rounded tracking-wider">
-          Admin Mode
-        </span>
-        <h2 className="font-title-lg text-title-lg text-on-surface">{t.adminDashboard}</h2>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-primary-container text-on-primary-container text-[10px] uppercase font-bold rounded tracking-wider">
+            Admin Mode
+          </span>
+          <h2 className="font-title-lg text-title-lg text-on-surface">{t.adminDashboard}</h2>
+        </div>
+        <button
+          onClick={() => setShowRolePanel(true)}
+          className="flex items-center gap-1.5 px-4 py-2 bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-white rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shrink-0"
+        >
+          <Icon name="admin_panel_settings" className="text-sm" />
+          <span>{lang === 'bn' ? 'ভূমিকা ও পদ সারণী' : 'Roles & Privileges'}</span>
+        </button>
       </div>
+
+      {showRolePanel && (
+        <RoleManagementPanel
+          lang={lang}
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setShowRolePanel(false)}
+        />
+      )}
 
       {/* Stats Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import { translations } from '../translations';
-import { signIn, register } from '../services/authService';
+import { signIn, register, sendPasswordResetEmail } from '../services/authService';
 
 export default function AuthModal({ lang, setCurrentUser, setShowAuthModal }) {
   const t = translations[lang];
@@ -12,6 +12,7 @@ export default function AuthModal({ lang, setCurrentUser, setShowAuthModal }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetStatus, setResetStatus] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -142,6 +143,27 @@ export default function AuthModal({ lang, setCurrentUser, setShowAuthModal }) {
                 className="w-full pl-12 pr-md py-4 rounded-xl bg-surface-container border-none focus:ring-2 focus:ring-primary-container text-body-lg placeholder:text-outline-variant"
               />
             </div>
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!email) {
+                    setResetStatus(lang === 'bn' ? 'পাসওয়ার্ড রিসেটের জন্য প্রথমে ইমেইল লিখুন' : 'Enter your email above first');
+                    return;
+                  }
+                  try {
+                    await sendPasswordResetEmail(email);
+                    setResetStatus(lang === 'bn' ? 'পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে!' : 'Password reset email sent to your inbox!');
+                  } catch (err) {
+                    setResetStatus(err?.message || 'Could not send reset email');
+                  }
+                }}
+                className="text-xs font-label-lg text-primary px-md pt-1"
+              >
+                {lang === 'bn' ? 'পাসওয়ার্ড ভুলে গেছেন?' : 'Forgot Password?'}
+              </button>
+            )}
+            {resetStatus && <p className="text-xs text-on-surface-variant px-md">{resetStatus}</p>}
           </div>
 
           {error && <p className="text-xs text-error px-md">{error}</p>}

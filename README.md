@@ -4,9 +4,9 @@ A community management platform for **Kunjachaya Club**, built as two apps shari
 
 ---
 
-## ⚠️ Status: reviewed and internally consistent, but never compiled
+## ⚠️ Status: reviewed and internally consistent, but never compiled here
 
-Everything in this repo has been through careful manual review, cross-file consistency checks, and static syntax/brace-balance verification. **It has never been through a real compiler** — this environment has no network access, so `gradle build` and `npm install && npm run build` have never actually been run. Before shipping, run a real build on both platforms (see [BUILD.md](./BUILD.md)) and treat the first build as a normal first build: fix whatever it turns up.
+Everything in this repo has been through careful manual review, cross-file consistency checks, and static syntax/brace-balance verification — this pass caught and fixed two real would-have-failed-the-build bugs (a stray brace in `FinancialsScreen.kt`, an orphaned Hilt module with the plugin never applied). **It has never been through a real compiler in this environment** — no network access here, so `gradle build` and `npm install && npm run build` have never actually been run *by this assistant*. The Gradle wrapper jar (`gradle/wrapper/gradle-wrapper.jar`) is now committed, so `./gradlew` should work out of the box on your machine — see [GRADLE_BUILD_GUIDE.md](./GRADLE_BUILD_GUIDE.md) for the debug keystore step it still needs. Before shipping, run a real build on both platforms and treat the first build as a normal first build: fix whatever it turns up.
 
 ---
 
@@ -22,6 +22,12 @@ Everything in this repo has been through careful manual review, cross-file consi
 ---
 
 ## Key Features
+
+### Accounts & Profile
+- Real Firebase Auth: email/password + real SMS OTP (Android Phone Auth)
+- Password reset ("Forgot Password?") on both Android and web
+- Profile photo upload via Firebase Storage — supported on both Android and Web (via interactive profile photo uploader)
+- New accounts always start `Pending` — no fabricated identity data, no shortcuts (ধারা-১০)
 
 ### Member Directory
 - Real-time resident roster, filterable by block and search term
@@ -45,6 +51,7 @@ Everything in this repo has been through careful manual review, cross-file consi
 
 ### Admin Portal (Executive Committee only)
 - Publish notices, issue monthly dues to all active members, approve pending memberships (ধারা-১০), resolve complaints
+- Assign committee posts and permission flags — restricted to President/General Secretary (ধারা-১৭); see [WORKFLOW.md](./WORKFLOW.md) for the full matrix
 - All actions write to real Firestore documents and produce a real, attributed activity log entry
 
 ---
@@ -85,11 +92,15 @@ Both apps read and write the **exact same documents** — a resident registered 
 ```
 .
 ├── README.md / WORKFLOW.md / BUILD.md   # This documentation
-├── firebase.json / .firebaserc          # Firebase project config (hosting, functions, rules, indexes)
+├── GRADLE_BUILD_GUIDE.md / WEB_BUILD_GUIDE.md  # Focused per-platform build steps
+├── firebase.json / .firebaserc / vercel.json   # Firebase + Vercel project config
 ├── firestore.rules                      # Server-side permission enforcement (see Security Model)
 ├── firestore.indexes.json               # Composite indexes required by app queries
 ├── functions/
 │   └── src/index.ts                     # createPipraPayCheckout + webhook handlers (real gateway, no fake fallback)
+├── scripts/
+│   ├── SUPER_ADMIN_SETUP.md             # First-officer bootstrap: manual Firestore steps
+│   └── (see web/set-super-admin.cjs)    # Same bootstrap, automated — reads credentials from env vars, never hardcoded
 ├── app/                                 # Android app
 │   ├── google-services.json             # Real Firebase config (needs your real API key — see BUILD.md)
 │   └── src/main/java/com/example/
@@ -98,6 +109,7 @@ Both apps read and write the **exact same documents** — a resident registered 
 │       ├── ui/screens/, ui/viewmodel/   # Screens + ClubViewModel
 │       └── util/FirebaseManager.kt      # Exposes isBackendConnected — never silently pretends
 └── web/                                 # Web app (React + Vite)
+    ├── set-super-admin.cjs              # First-officer bootstrap script (credentials via env vars only)
     └── src/
         ├── roles.js                     # JS mirror of UserEntity.kt's role logic
         ├── firebase.js                  # Real Firebase config
@@ -109,13 +121,14 @@ Both apps read and write the **exact same documents** — a resident registered 
 
 ## Getting Started
 
-See [BUILD.md](./BUILD.md) for full setup. Short version:
+See [BUILD.md](./BUILD.md) for full setup, or the focused [GRADLE_BUILD_GUIDE.md](./GRADLE_BUILD_GUIDE.md) / [WEB_BUILD_GUIDE.md](./WEB_BUILD_GUIDE.md). Short version:
 
 1. **Get your real Android API key** into `app/google-services.json` (currently has a placeholder marked `REPLACE_WITH_REAL_ANDROID_API_KEY`).
 2. **Set real PipraPay merchant credentials** for the Cloud Function — without them, `createPipraPayCheckout` deliberately fails with a clear error rather than faking a checkout link.
 3. **Deploy Firestore rules/indexes/functions**: `firebase deploy --only firestore:rules,firestore:indexes,functions`
-4. **Build Android**: `./gradlew :app:assembleDebug`
+4. **Build Android**: generate a debug keystore (`GRADLE_BUILD_GUIDE.md` §2), then `./gradlew :app:assembleDebug`
 5. **Build web**: `cd web && npm install && npm run build`
+6. **Bootstrap your first President/GS account**: see `scripts/SUPER_ADMIN_SETUP.md` — there's no seeded admin, on purpose.
 
 ---
 

@@ -52,17 +52,25 @@ fun RoleAndModerationPrivilegeDialog(
     var isSaving by remember { mutableStateOf(false) }
 
     val currentUser by viewModel.currentUser.collectAsState()
-    val isR5Leader = currentUser?.canAppointOfficers() == true
+    val canReassignPost = currentUser?.canAppointOfficers() == true
     val isTopPost = selectedPost == CommitteePost.PRESIDENT || selectedPost == CommitteePost.GENERAL_SECRETARY
 
     // President / General Secretary carry the constitution's broadest authority (ধারা-১৭) — all ticks follow automatically.
+    // Other posts get a sensible pre-checked suggestion based on their named subject area (still editable):
+    // Treasurer explicitly handles all club money per ধারা-১৭.৫; Publicity/Social Welfare are suggestions only.
     LaunchedEffect(selectedPost) {
-        if (isTopPost) {
-            canNotices = true
-            canComplaints = true
-            canMembers = true
-            canFinancials = true
-            canDelete = true
+        when (selectedPost) {
+            CommitteePost.PRESIDENT, CommitteePost.GENERAL_SECRETARY -> {
+                canNotices = true
+                canComplaints = true
+                canMembers = true
+                canFinancials = true
+                canDelete = true
+            }
+            CommitteePost.TREASURER -> canFinancials = true
+            CommitteePost.PUBLICITY_SECRETARY -> canNotices = true
+            CommitteePost.SOCIAL_WELFARE_SECRETARY -> canComplaints = true
+            else -> { /* no default suggestion — leave as previously set */ }
         }
     }
 
@@ -166,13 +174,13 @@ fun RoleAndModerationPrivilegeDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     RoleSelectionOption(
                         title = if (lang == Language.BN) "কোনো কমিটি পদ নেই" else "No committee post",
-                        description = if (!isR5Leader) (if (lang == Language.BN) "পদ পরিবর্তনের জন্য R5 লিডার (সভাপতি/সাধারণ সম্পাদক) অনুমতি প্রয়োজন" else "R5 Leader (President/GS) permission required to change officer post") else "",
+                        description = if (!canReassignPost) (if (lang == Language.BN) "পদ পরিবর্তনের জন্য সভাপতি বা সাধারণ সম্পাদকের অনুমতি প্রয়োজন (ধারা-১৭)" else "Only the President or General Secretary can reassign a committee post (ধারা-১৭)") else "",
                         icon = Icons.Default.Person,
                         isSelected = selectedPost == null,
                         color = MaterialTheme.colorScheme.outline,
                         onClick = {
-                            if (isR5Leader) selectedPost = null
-                            else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র R5 লিডাররা অফিসার পদ নিয়োগ/বহিস্কার করতে পারেন" else "Only R5 Leaders can appoint or demote R4 Officers", Toast.LENGTH_SHORT).show()
+                            if (canReassignPost) selectedPost = null
+                            else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র সভাপতি বা সাধারণ সম্পাদক কমিটি পদ বণ্টন/পরিবর্তন করতে পারেন" else "Only the President or General Secretary can assign or change a committee post", Toast.LENGTH_SHORT).show()
                         }
                     )
                     CommitteePost.entries.forEach { post ->
@@ -185,8 +193,8 @@ fun RoleAndModerationPrivilegeDialog(
                             color = if (post == CommitteePost.PRESIDENT || post == CommitteePost.GENERAL_SECRETARY)
                                 MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             onClick = {
-                                if (isR5Leader) selectedPost = post
-                                else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র R5 লিডাররা অফিসার পদ নিয়োগ/বহিস্কার করতে পারেন" else "Only R5 Leaders can appoint or demote R4 Officers", Toast.LENGTH_SHORT).show()
+                                if (canReassignPost) selectedPost = post
+                                else Toast.makeText(context, if (lang == Language.BN) "শুধুমাত্র সভাপতি বা সাধারণ সম্পাদক কমিটি পদ বণ্টন/পরিবর্তন করতে পারেন" else "Only the President or General Secretary can assign or change a committee post", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }

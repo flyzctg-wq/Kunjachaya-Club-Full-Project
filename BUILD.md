@@ -68,31 +68,27 @@ You'll also need to register a real PipraPay webhook pointing at the deployed `p
 
 ## 4. Android Build
 
-**For the full step-by-step (wrapper bootstrap, debug keystore generation, task reference, troubleshooting), see [GRADLE_BUILD_GUIDE.md](./GRADLE_BUILD_GUIDE.md).** Quick summary below.
+**For the full step-by-step (debug keystore generation, task reference, troubleshooting), see [GRADLE_BUILD_GUIDE.md](./GRADLE_BUILD_GUIDE.md).** Quick summary below.
 
 ### Prerequisites
 | Dependency | Version |
 |---|---|
 | JDK | 17+ |
-| Android SDK | `compileSdk = 34`, `minSdk = 24`, `targetSdk = 34` |
-| Kotlin | 1.9.x |
-| Gradle | 8.x |
+| Android SDK | `compileSdk = 36.1`, `minSdk = 24`, `targetSdk = 36` |
+| Kotlin | 2.2.x |
+| Gradle | 9.1.0 (pinned via the committed wrapper — see below) |
 
 ### Build
 ```bash
 ./gradlew :app:assembleDebug
 ```
 
-**First time only:** this repo's Gradle wrapper is missing its binary launcher (`gradle/wrapper/gradle-wrapper.jar`) — that's a compiled binary, not something safe to hand-author, and it couldn't be generated in the sandboxed environment this project was built in (no network, no local Gradle install). `gradlew` and `gradle/wrapper/gradle-wrapper.properties` (pinned to Gradle 9.1.0, which AGP 9.1.1 requires) are already in place — you just need to generate the jar once:
-
-- **Easiest:** open the project in Android Studio. It detects the wrapper config and regenerates the missing jar automatically on sync.
-- **Or, if you have Gradle installed locally** (e.g. via [SDKMAN](https://sdkman.io) or Homebrew):
-  ```bash
-  gradle wrapper --gradle-version 9.1.0
-  ```
-  This is also what CI does automatically on every run (see `.github/workflows/build.yml`) — nothing else needs to change there.
-
-After that, `./gradlew :app:assembleDebug` works normally on any machine, every time, without needing Gradle installed globally.
+**First time only:** generate a debug keystore — `app/build.gradle.kts`'s debug signing config points at `debug.keystore` at the repo root, which is intentionally not committed (debug keystores are local/disposable, never shared):
+```bash
+keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey \
+  -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+```
+The Gradle wrapper itself (`gradlew`, `gradle-wrapper.properties`, and `gradle-wrapper.jar`) is fully committed — no separate bootstrap step needed; `./gradlew` just works. Full detail, including task reference and troubleshooting, is in [GRADLE_BUILD_GUIDE.md](./GRADLE_BUILD_GUIDE.md).
 
 Full clean rebuild:
 ```bash
@@ -156,8 +152,10 @@ firebase deploy --only hosting
 After deploying rules, functions, and both app builds:
 
 1. Register the **first real account** (email/password) through either app — it will land as `MemberClass.NEW`, `membershipStatus: "Pending"`.
-2. **Manually promote that first account to President or General Secretary directly in the Firestore Console** (set `committeePost` to `PRESIDENT` or `GENERAL_SECRETARY` on that user's document). This is intentional — there is no seeded admin account, and there shouldn't be one; the club's real first officer needs to be set up by whoever controls the Firebase project.
-3. Sign back in — that account now has full Executive Committee authority per ধারা-১৭ and can approve subsequent members, post notices, and assign committee posts through the in-app Admin Portal / Role dialog.
+2. **Promote that first account to President or General Secretary.** There is no seeded admin account, and there shouldn't be one — the club's real first officer needs to be set up by whoever controls the Firebase project, once:
+   - **Automated (recommended):** `cd web && SUPER_ADMIN_EMAIL=you@example.com SUPER_ADMIN_PASSWORD='...' node set-super-admin.cjs` — credentials come from environment variables only, never hardcoded in the script.
+   - **Manual:** follow `scripts/SUPER_ADMIN_SETUP.md` to edit the Firestore document by hand.
+3. Sign back in — that account now has full Executive Committee authority per ধারা-১৭ and can approve subsequent members, post notices, and assign committee posts through the in-app Admin Portal / Role dialog (Android only for now — see WORKFLOW.md's platform-parity note).
 4. Test one real PipraPay checkout end-to-end (small amount) to confirm the webhook is wired correctly before relying on it for real dues collection.
 
 ---

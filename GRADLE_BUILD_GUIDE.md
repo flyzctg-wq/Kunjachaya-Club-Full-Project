@@ -13,22 +13,18 @@ Focused, step-by-step guide to actually getting `./gradlew` to produce an APK. F
 | A debug keystore at the repo root (`debug.keystore`) | The `debug` build type's signing config points at it, and it's intentionally **not** committed (see §2) |
 | Real Firebase Android API key in `app/google-services.json` | Without it, the app still builds and runs — it just stays in local-only mode (see BUILD.md §0) |
 
-You do **not** need Gradle installed globally — the wrapper (`./gradlew`) handles that, once its launcher jar exists (see §1).
+You do **not** need Gradle installed globally — the wrapper (`./gradlew`) is fully self-contained now (see §1).
 
 ---
 
-## 1. Bootstrap the Gradle wrapper (one-time)
+## 1. The Gradle wrapper — already set up
 
-This repo ships `gradlew`, `gradlew.bat`, and `gradle/wrapper/gradle-wrapper.properties` (pinned to **Gradle 9.1.0**, which AGP 9.1.1 requires — this is a hard requirement, not a suggestion). What's missing is `gradle/wrapper/gradle-wrapper.jar` itself — a compiled binary that has to be generated once, by something that already has Gradle available:
-
-**Option A — Android Studio (easiest):** open the project folder. Android Studio detects the wrapper config on sync and regenerates the missing jar automatically. Nothing else to do.
-
-**Option B — command line**, if you have Gradle installed some other way (SDKMAN, Homebrew, a system package):
+`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.properties` (pinned to **Gradle 9.1.0**, which AGP 9.1.1 requires — a hard requirement, not a suggestion), and `gradle/wrapper/gradle-wrapper.jar` itself are all committed to this repo. `./gradlew` works immediately on any machine — Windows, macOS, Linux — with zero setup, as long as `gradlew` has execute permission on Unix-like systems:
 ```bash
-gradle wrapper --gradle-version 9.1.0
+chmod +x gradlew   # only needed if it isn't already executable after cloning/extracting
 ```
 
-After either option, `./gradlew` works normally from then on, on any machine, without needing Gradle installed globally — CI does exactly this bootstrap step automatically on every run (`.github/workflows/build.yml`).
+That's it — no separate bootstrap step needed. (Earlier revisions of this project shipped without the wrapper jar and needed a one-time `gradle wrapper --gradle-version 9.1.0` bootstrap; that's no longer necessary now that the jar itself is committed.)
 
 ---
 
@@ -90,6 +86,8 @@ Two things were fixed in this project specifically so `./gradlew` has a chance o
 - **An orphaned Hilt module (`di/NetworkModule.kt`)** — used `@Module`/`@InstallIn` (Hilt annotations) while the Hilt Gradle plugin was never actually applied anywhere in the build, which would have failed compilation. The file was also completely unused (nothing in the app injects anything from it) and pointed at a fake generic REST endpoint (`https://api.example.com/`) unrelated to this app's real Firebase-based architecture. Deleted, along with the now-unused `hilt-android`, `hilt-compiler`, `retrofit`, `okhttp`, and `moshi` dependencies in `app/build.gradle.kts`.
 
 Both were pre-existing issues in the original scaffold, not introduced by later changes — worth knowing in case similar dead/half-wired code shows up elsewhere as the project grows.
+
+Since then, `gradle-wrapper.jar` has also been committed directly (see §1) — the earlier "generate it yourself" bootstrap step in this guide no longer applies.
 
 ---
 
