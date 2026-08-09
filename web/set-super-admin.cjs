@@ -18,13 +18,13 @@ const firebaseConfig = {
   appId: '1:668738359171:web:033a0787646aca6077f0b6',
 };
 
-const TARGET_EMAIL = process.env.SUPER_ADMIN_EMAIL;
+const TARGET_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'flyzctg@gmail.com';
 const PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 
 async function main() {
-  if (!TARGET_EMAIL || !PASSWORD) {
-    console.error('\n❌  Set SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD environment variables first.');
-    console.error('    Example: SUPER_ADMIN_EMAIL=you@example.com SUPER_ADMIN_PASSWORD=\'...\' node set-super-admin.cjs\n');
+  if (!PASSWORD) {
+    console.error('\n❌  Set SUPER_ADMIN_PASSWORD environment variable first.');
+    console.error(`    Example: $env:SUPER_ADMIN_PASSWORD='your_password'; node set-super-admin.cjs\n`);
     process.exit(1);
   }
 
@@ -42,8 +42,6 @@ async function main() {
     id:                  uid,
     primaryContact:      TARGET_EMAIL,
     phone:               TARGET_EMAIL,
-    nameEn:              'Club President',
-    nameBn:              'ক্লাব সভাপতি',
     memberClass:         'FOUNDING',
     membershipStatus:    'Active',
     committeePost:       'PRESIDENT',
